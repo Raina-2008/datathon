@@ -1,0 +1,183 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>CareSlot – find a hospital slot near you</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Find which hospital has a free slot right now, or check when the next slot opens at a hospital you choose.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
+<style>
+:root{--bg:#f3f7f6;--card:#fff;--ink:#12211e;--mut:#5b706b;--line:#dbe6e3;--acc:#0f9d8a;--ok:#1aa86a;--mid:#e8a317;--bad:#e5533f;--off:#8a9a96;color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root{--bg:#0c1514;--card:#13201e;--ink:#e6f2ef;--mut:#8fa8a2;--line:#22352f;--acc:#2dd4bf;--ok:#3ddc97;--mid:#f5b942;--bad:#ff7d68;--off:#6f8680;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+.wrap{max-width:760px;margin:auto;padding:14px 16px 40px}
+header{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}h1{margin:0;font-size:22px}h1 b{color:var(--acc)}.mut{color:var(--mut);font-size:13px}
+.clock{text-align:right;font-weight:700}.clock small{display:block;color:var(--mut);font-weight:400}
+.sos{background:var(--card);border:1px solid var(--bad);border-radius:12px;padding:8px 12px;font-size:13px;margin-bottom:12px}
+.ctl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+select,input,button{font:inherit;color:var(--ink)}select,input{padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card)}select{flex:1;min-width:180px}
+label.sw{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--mut)}
+.tabs{display:flex;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:14px}.tabs button{flex:1;border:0;background:none;padding:10px;border-radius:10px;cursor:pointer;font-weight:600;color:var(--mut)}.tabs button.on{background:var(--acc);color:#04201b}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.hn{font-weight:700;font-size:16px}
+.chip{display:inline-block;border-radius:20px;padding:2px 10px;font-size:12px;font-weight:700;color:#0a1a16;white-space:nowrap}.ok{background:var(--ok)}.mid{background:var(--mid)}.bad{background:var(--bad)}.off{background:var(--off);color:#fff}
+.m{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}.m div{background:var(--bg);border-radius:12px;padding:8px;text-align:center}.m b{display:block;font-size:17px}.m small{color:var(--mut);font-size:11.5px}
+.btn{background:var(--acc);color:#04201b;border:0;border-radius:12px;padding:9px 14px;font-weight:700;cursor:pointer}.btn.g{background:none;border:1px solid var(--line);color:var(--ink)}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:8px;margin-top:10px}.slots button{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px;cursor:pointer;text-align:center}.slots button:hover{border-color:var(--acc)}.slots b{display:block}.slots small{color:var(--mut)}
+.bar{display:grid;grid-template-columns:54px 1fr 44px;gap:8px;align-items:center;font-size:12.5px;margin:3px 0}.bar i{display:block;height:12px;border-radius:6px}.bar.now span{font-weight:700;color:var(--acc)}
+.mine{border-color:var(--acc)}h3{margin:0 0 6px;font-size:14px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.steps span{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:3px 11px;font-size:12.5px;color:var(--mut)}.chat{max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:8px}.msg{background:var(--bg);border-radius:14px;padding:9px 12px;max-width:92%}.msg.u{align-self:flex-end;background:var(--acc);color:#04201b}.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}.chips .btn{padding:5px 10px;font-size:12.5px}details{border-top:1px solid var(--line);padding:8px 0}summary{cursor:pointer;font-weight:600}details p{margin:6px 0 0;color:var(--mut)}
+.tg{font-size:11px;color:var(--mut);margin-top:4px}
+footer{color:var(--mut);font-size:12px;margin-top:20px}
+</style></head><body><div class="wrap">
+<header><div><h1>Care<b>Slot</b></h1><div class="mut">Find a free hospital slot — now or later</div></div><div class="clock" id="clk"></div></header>
+<div class="sos">🚨 <b>Emergency?</b> Don't wait for a slot. Call your local emergency number (112 in India) or go to the nearest emergency room.</div>
+<div class="steps"><span>① Pick a service</span><span>② See free slots</span><span>③ Book in one tap</span></div>
+<div id="mine"></div>
+<div class="ctl"><select id="svc" aria-label="Service"></select><label class="sw"><input type="checkbox" id="oo"> Open now only</label></div>
+<div class="tabs"><button id="t1" class="on">Which hospital is free now?</button><button id="t2">Check one hospital</button><button id="t3">Ask &amp; FAQ</button></div>
+<div id="view"></div><div id="view3" hidden></div>
+<footer>Demo app. Hospitals, queues and bookings are <b>simulated</b> from patterns in the “Health – The Forgotten Patient” dataset (synthetic data). Not real hospital data; do not use for medical decisions. Bookings are stored only in your browser.</footer>
+</div>
+<script>
+// ======= EDIT HERE: hospitals & services =======
+const CFG={"facts":{"avg":52,"p90":84,"tri":{"Critical":17,"High":27,"Medium":49,"Low":72},"dept":{"low":45,"high":61},"tat":70,"med":58,"urg":69,"rou":70,"t":{"Blood test":74,"CT scan":70,"ECG":71,"MRI":68,"Urine test":67,"X-ray":69},"vt":{"Walk-in":53,"Scheduled":52,"Follow-up":52},"lbc":3.0},"opd":[0.05,0.03,0.03,0.03,0.05,0.12,0.25,0.5,0.8,1,1,0.9,0.6,0.55,0.65,0.75,0.85,0.8,0.6,0.4,0.25,0.15,0.08,0.05],"svc":{"General Medicine":{"wf":1.06,"slot":15},"Pediatrics":{"wf":1.17,"slot":15},"Cardiology":{"wf":0.87,"slot":30},"Orthopedics":{"wf":0.94,"slot":15},"Neurology":{"wf":1.08,"slot":30},"Radiology":{"wf":1.06,"slot":30},"Laboratory":{"wf":1.17,"slot":15},"Surgery":{"wf":0.92,"slot":30}},"hospitals":[{"id":"h1","name":"CityCare General Hospital","area":"Central","km":2.1,"open":7,"close":22,"pop":1.2,"svc":{"General Medicine":4,"Pediatrics":2,"Cardiology":2,"Orthopedics":2,"Neurology":1,"Radiology":3,"Laboratory":4,"Surgery":1}},{"id":"h2","name":"Lakeside Medical Centre","area":"Lakeside","km":4.8,"open":8,"close":20,"pop":0.9,"svc":{"General Medicine":3,"Pediatrics":2,"Orthopedics":2,"Radiology":2,"Laboratory":3}},{"id":"h3","name":"Sunrise Children's Hospital","area":"North","km":6.3,"open":8,"close":21,"pop":1.0,"svc":{"Pediatrics":4,"Radiology":2,"Laboratory":3}},{"id":"h4","name":"Metro Heart & Neuro Institute","area":"Metro","km":7.9,"open":7,"close":21,"pop":1.3,"svc":{"Cardiology":3,"Neurology":3,"General Medicine":2,"Radiology":2,"Laboratory":2}},{"id":"h5","name":"Greenfield Community Clinic","area":"Greenfield","km":3.5,"open":9,"close":18,"pop":0.7,"svc":{"General Medicine":3,"Pediatrics":1,"Laboratory":2}},{"id":"h6","name":"Riverbank Multispecialty","area":"Riverside","km":9.4,"open":8,"close":22,"pop":1.1,"svc":{"Orthopedics":3,"Surgery":2,"General Medicine":2,"Radiology":2,"Neurology":1,"Laboratory":3}}]};
+const AI_ENDPOINT=''; // optional: paste your Worker URL here to turn on AI on GitHub (see README)
+// =================================================
+const $=s=>document.querySelector(s),SERV=Object.keys(CFG.svc);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const OFF=()=>-new Date().getTimezoneOffset()*60000;
+const fmt=ms=>new Date(ms).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
+const dtag=ms=>{const a=new Date(ms),n=new Date(),d=Math.round((new Date(a.getFullYear(),a.getMonth(),a.getDate())-new Date(n.getFullYear(),n.getMonth(),n.getDate()))/864e5);return d==0?'':d==1?' tomorrow':' '+a.toLocaleDateString([],{weekday:'short'})};
+const when=ms=>fmt(ms)+dtag(ms),mins=ms=>Math.max(0,Math.round((ms-Date.now())/60000));
+const dur=m=>m<1?'now':m<60?m+' min':Math.floor(m/60)+' h'+(m%60?' '+m%60+' min':'');
+const hh=h=>{const d=new Date();d.setHours(h,0,0,0);return fmt(d)};
+function h01(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}h^=h>>>13;h=Math.imul(h,0x5bd1e995);h^=h>>>15;return(h>>>0)/4294967296}
+let MY=[];try{MY=JSON.parse(localStorage.getItem('careslot')||'[]').filter(b=>b.t+36e5>Date.now())}catch(e){}
+const saveMY=()=>{try{localStorage.setItem('careslot',JSON.stringify(MY))}catch(e){}};
+const isOpen=(h,ms)=>{const d=new Date(ms),m=d.getHours()*60+d.getMinutes();return m>=h.open*60&&m<h.close*60};
+function booked(h,sv,s){const desks=h.svc[sv],hr=new Date(s).getHours(),load=CFG.opd[hr]*h.pop*CFG.svc[sv].wf;
+ const p=Math.max(.05,Math.min(.93,.15+.6*load)),near=s-Date.now()<45*6e4,seed=h.id+'|'+sv+'|'+s+(near?'|'+Math.floor(Date.now()/3e5):'');
+ let b=h01(seed)<p?desks:Math.floor(h01(seed+'b')*desks);if(MY.some(x=>x.h==h.id&&x.s==sv&&x.t==s))b=Math.min(desks,b+1);return b}
+function slots(h,sv,from,count){const L=CFG.svc[sv].slot*6e4,o=OFF(),out=[];let s=Math.ceil((from+o)/L)*L-o,ahead=0,online=0,n=0;
+ for(let i=0;i<600&&(out.length<count||n<8);i++,s+=L){if(!isOpen(h,s)||!isOpen(h,s+L-1))continue;const b=booked(h,sv,s);if(n<8)online+=b;n++;
+  if(b<h.svc[sv]&&out.length<count)out.push({t:s,free:h.svc[sv]-b,ahead});ahead+=b}
+ return{list:out,online}}
+function status(h,r){if(!r.list.length)return['Fully booked','bad'];if(!isOpen(h,Date.now()))return['Closed · opens '+hh(h.open),'off'];const w=mins(r.list[0].t);return w<=20?['Free slot now','ok']:w<=90?['Short wait','mid']:['Busy today','bad']}
+const S={tab:1,hid:null,pend:null};
+const offered=()=>CFG.hospitals.filter(h=>h.svc[$('#svc').value]);
+function card(h,det){const sv=$('#svc').value,r=slots(h,sv,Date.now(),8),st=status(h,r),f=r.list[0];
+ return `<div class="card"><div class="row"><div><div class="hn">${esc(h.name)}</div><div class="mut">${esc(h.area)} · ${h.km} km · open ${hh(h.open)}–${hh(h.close)}</div></div><span class="chip ${st[1]}">${st[0]}</span></div>
+ <div class="m"><div><b>${r.online}</b><small>patients online</small></div><div><b>${f?when(f.t):'—'}</b><small>next free slot</small></div><div><b>${f?dur(mins(f.t)):'—'}</b><small>from now</small></div></div>
+ ${det?'':`<div style="margin-top:10px;text-align:right"><button class="btn g" data-h="${h.id}">See slots →</button></div>`}</div>`}
+function viewNow(){const oo=$('#oo').checked,sv=$('#svc').value;let hs=offered().map(h=>{const r=slots(h,sv,Date.now(),8);return{h,r,t:r.list[0]?r.list[0].t:1e18}});
+ if(oo)hs=hs.filter(x=>isOpen(x.h,Date.now()));hs.sort((a,b)=>a.t-b.t);
+ const best=hs[0]&&hs[0].t<1e18?hs[0]:null,miss=CFG.hospitals.length-offered().length;
+ return (best?`<div class="card"><h3>Best option</h3><b>${esc(best.h.name)}</b> — next free slot <b>${when(best.t)}</b> (${dur(mins(best.t))} from now)</div>`:'<div class="card">No free slots found right now.</div>')+hs.map(x=>card(x.h)).join('')+(miss?`<p class="mut">${miss} hospital(s) near you don't offer ${esc(sv)}.</p>`:'')}
+function crowd(h,sv){const L=CFG.svc[sv].slot*6e4,d=new Date();d.setHours(0,0,0,0);const base=d.getTime(),cur=new Date().getHours(),rows=[];
+ for(let hr=h.open;hr<h.close;hr++){let f=0,n=0;for(let s=base+hr*36e5;s<base+(hr+1)*36e5;s+=L){f+=booked(h,sv,s)/h.svc[sv];n++}rows.push([hr,f/n])}
+ const up=rows.filter(r=>r[0]>=cur),best=up.length?up.reduce((a,b)=>b[1]<a[1]?b:a):null;
+ return `<div class="card"><h3>How busy is it today?</h3>${rows.map(([hr,v])=>`<div class="bar ${hr==cur?'now':''}"><span>${hh(hr)}</span><i style="width:${Math.max(4,v*100)}%;background:${v>.75?'var(--bad)':v>.5?'var(--mid)':'var(--ok)'}"></i><span>${Math.round(v*100)}%</span></div>`).join('')}<div class="mut" style="margin-top:6px">% of slots already booked.${best?' Quietest remaining hour: <b>'+hh(best[0])+'</b>.':''}</div></div>`}
+function viewOne(){const hs=offered();if(!hs.find(h=>h.id==S.hid))S.hid=hs[0].id;const h=hs.find(x=>x.id==S.hid),sv=$('#svc').value,r=slots(h,sv,Date.now(),8),f=r.list[0];
+ let pend='';if(S.pend){const p=S.pend;pend=`<div class="card mine"><b>Book ${when(p.t)} at ${esc(h.name)}?</b><div class="ctl" style="margin:8px 0 0"><input id="nm" placeholder="Your name" maxlength="40"><button class="btn" id="ok">Confirm</button><button class="btn g" id="no">Cancel</button></div></div>`}
+ return `<div class="ctl"><select id="hs">${hs.map(x=>`<option value="${x.id}" ${x.id==h.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>${card(h,1)}
+ <div class="card"><div class="m"><div><b>${r.online}</b><small>patients already online</small></div><div><b>${f?f.ahead:'—'}</b><small>ahead of you</small></div><div><b>${f?when(f.t):'—'}</b><small>your earliest slot</small></div></div></div>${pend}
+ <div class="card"><h3>Free slots — tap to book</h3>${r.list.length?`<div class="slots">${r.list.map(x=>`<button data-t="${x.t}"><b>${fmt(x.t)}${dtag(x.t)}</b><small>${x.free} free</small></button>`).join('')}</div>`:'<span class="mut">No free slots in the next days.</span>'}</div>${crowd(h,sv)}`}
+function mine(){$('#mine').innerHTML=MY.map(b=>{const h=CFG.hospitals.find(x=>x.id==b.h);return `<div class="card mine"><div class="row"><div><h3>Your booking</h3><b>${esc(h.name)}</b> · ${esc(b.s)}<br>${when(b.t)} · token <b>${b.k}</b>${b.n?' · '+esc(b.n):''}</div><button class="btn g" data-c="${b.k}">Cancel</button></div></div>`}).join('')}
+function render(){const sv=$('#svc').value;[1,2,3].forEach(i=>$('#t'+i).className=S.tab==i?'on':'');$('#view').hidden=S.tab==3;$('#view3').hidden=S.tab!=3;if(S.tab!=3)$('#view').innerHTML=S.tab==1?viewNow():viewOne();mine();$('#clk').innerHTML=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})+'<small>live · '+esc(sv)+'</small>'}
+$('#svc').innerHTML=SERV.map(s=>`<option>${s}</option>`).join('');
+$('#svc').onchange=()=>{S.pend=null;render()};$('#oo').onchange=render;$('#t1').onclick=()=>{S.tab=1;render()};$('#t2').onclick=()=>{S.tab=2;S.pend=null;render()};
+document.addEventListener('click',e=>{const t=e.target.closest('button,select');if(!t)return;
+ if(t.dataset.h){S.hid=t.dataset.h;S.tab=2;render();scrollTo(0,0)}
+ else if(t.dataset.t){S.pend={t:+t.dataset.t};render()}
+ else if(t.id=='no'){S.pend=null;render()}
+ else if(t.id=='ok'){if(MY.length){alert('You already have a booking. Cancel it first.');return}const sv=$('#svc').value;MY.push({h:S.hid,s:sv,t:S.pend.t,k:'CS-'+Math.random().toString(36).slice(2,7).toUpperCase(),n:$('#nm').value.trim()});saveMY();S.pend=null;render()}
+ else if(t.dataset.c){MY=MY.filter(b=>b.k!=t.dataset.c);saveMY();render()}});
+document.addEventListener('change',e=>{if(e.target.id=='hs'){S.hid=e.target.value;S.pend=null;render()}});
+// ===== Ask & FAQ =====
+const F=CFG.facts,tri=F.tri,dw=F.dept;
+const FAQ=[
+['How does CareSlot work?','Pick a service at the top. <b>Which hospital is free now?</b> ranks nearby hospitals by their earliest free slot. <b>Check one hospital</b> shows patients already online, how many are ahead of you, free slots to book, and how busy the day is. Tap a slot to book it.','work use app start step guide'],
+['Is this real hospital data?','No. Hospitals, queues and bookings are <b>simulated</b> for this demo using patterns from the “Health – The Forgotten Patient” dataset, which is itself synthetic (made-up) data. Please do not use it for medical decisions.','real demo simulated fake true accurate genuine'],
+['What does “patients online” mean?','It is the number of patients already booked in that hospital’s next 8 open slots for your chosen service. <b>Ahead of you</b> is how many are booked before the slot you pick.','online patients queue ahead many people'],
+['How is my slot time worked out?','We look at each upcoming slot, count its bookings against the hospital’s doctors for that service, and show the first slot that still has room. Slots in the next 45 minutes refresh every few minutes so the picture feels live.','slot time calculated estimate earliest available availability'],
+['How long do patients usually wait?',`In the dataset the average wait was <b>${F.avg} minutes</b>; 9 in 10 patients waited under ${F.p90} minutes. Waiting differs by department: about ${dw.low} min in Cardiology, Pharmacy and Admissions up to about ${dw.high} min in Laboratory and Pediatrics.`,'wait waiting long average minutes usually typical delay'],
+['What is triage, and why do others go before me?',`Triage means staff sort patients by how urgent they are. In the dataset the average wait was about <b>${tri.Critical} min</b> for Critical, <b>${tri.High}</b> for High, <b>${tri.Medium}</b> for Medium and <b>${tri.Low}</b> for Low cases. Someone arriving after you may go first if their case is more urgent.`,'triage urgent priority before skip jump critical why others unfair'],
+['How long do tests and scans take?',`In the dataset a test took about <b>${F.tat} minutes</b> on average from request to completion (blood ${F.t['Blood test']}, CT ${F.t['CT scan']}, ECG ${F.t['ECG']}, MRI ${F.t['MRI']}, urine ${F.t['Urine test']}, X-ray ${F.t['X-ray']}); half finished within about ${F.med} minutes. Urgent tests were not noticeably faster than routine ones (${F.urg} vs ${F.rou} min), so ask the staff for your own estimate.`,'test tests result results blood xray x-ray mri ct ecg urine scan report turnaround'],
+['When is the best time to visit?','Open <b>Check one hospital</b> and look at “How busy is it today?”. It shows the share of slots already booked each hour and names the quietest remaining hour. In the dataset itself, waits barely changed by hour, weekday or visit type (all about 52 minutes), so treat the chart as a guide.','best quiet time crowded busy peak morning evening rush when'],
+['Is a walk-in or a booked slot faster?',`In the dataset the difference was small: walk-in ${F.vt['Walk-in']} min, scheduled ${F.vt['Scheduled']}, follow-up ${F.vt['Follow-up']}. A booked slot mainly gives you a fixed time instead of an open queue.`,'walk walk-in appointment scheduled follow-up faster'],
+['What if I leave before being seen?',`About <b>${F.lbc}%</b> of visits in the dataset ended as “left before care”. If you can’t stay, tell the reception and cancel your CareSlot booking so the slot can be used by someone else.`,'leave left walkout skip miss late no-show abandon'],
+['How do I cancel or change my booking?','Your booking appears in a card at the top of the page. Tap <b>Cancel</b>, then choose a new slot. You can hold one booking at a time.','cancel change reschedule booking modify edit'],
+['Is my information safe?','Your name and booking are saved only in your own browser. Nothing is sent to a server. Clearing your browser data removes them.','privacy safe stored personal secure security name'],
+['Which hospitals and services are covered?',`Hospitals: ${CFG.hospitals.map(h=>h.name).join(', ')}. Services: ${SERV.join(', ')}.`,'services hospitals covered list departments offered'],
+['What should I bring to my visit?','Usually: a photo ID, earlier reports or prescriptions, your insurance card or a way to pay, and a list of medicines you take. Check with the hospital, as requirements differ.','bring carry documents id reports card paper'],
+['What if it is an emergency?','Don’t wait for a slot. Call your local emergency number (112 in India) or go straight to the nearest emergency room.','emergency ambulance critical'],
+['Does CareSlot cost anything?','It is a free demo. Real hospital charges are not shown or collected here.','cost fee free price pay charge money'],
+['Can I use it on my phone?','Yes. It works in any modern browser on phones, tablets and computers, in light or dark mode.','phone mobile android iphone install tablet']];
+const STOP=new Set('the a an is are do does i my me to of in on it for can what how which when will at and or with you we be there this that your'.split(' '));
+const toks=s=>s.toLowerCase().replace(/[^a-z0-9\- ]/g,' ').split(/\s+/).filter(w=>w&&!STOP.has(w));
+const SYN={'General Medicine':'general physician doctor fever cold cough checkup check-up gp medicine','Pediatrics':'child children kid kids baby pediatric paediatric pediatrics infant','Cardiology':'heart cardiology cardiac cardiologist bp','Orthopedics':'bone bones fracture joint orthopedic orthopaedic knee back spine','Neurology':'brain neuro neurology headache migraine nerve','Radiology':'scan xray x-ray mri ct ultrasound radiology imaging','Laboratory':'lab blood urine laboratory sample','Surgery':'surgery surgeon operation surgical'};
+const EMER=/chest pain|heart attack|can'?t breathe|cannot breathe|unconscious|faint|severe bleeding|heavy bleeding|stroke|seizure|accident|poison|overdose|suicid|ambulance|emergency/;
+const MEDQ=/symptom|medicine|tablet|dose|dosage|diagnos|cure|prescri|should i take|is it serious|what disease/;
+const AVAIL=/free|available|availab|now|slot|earliest|soon|today|which hospital|where|book|appointment|nearest|quick/;
+function svcOf(q){const t=toks(q);let best=null,bs=0;for(const [s,w] of Object.entries(SYN)){const sc=w.split(' ').filter(x=>t.includes(x)||(x.length>=4&&q.toLowerCase().includes(x))).length;if(sc>bs){bs=sc;best=s}}return best}
+function hospOf(q){q=q.toLowerCase();return CFG.hospitals.find(h=>h.name.toLowerCase().split(/[^a-z]+/).filter(w=>w.length>4&&!['hospital','medical','centre','community','general','clinic','institute','children','multispecialty'].includes(w)).some(w=>q.includes(w)))}
+function slotAnswer(sv){$('#svc').value=sv;const hs=CFG.hospitals.filter(h=>h.svc[sv]).map(h=>({h,r:slots(h,sv,Date.now(),8)})).filter(x=>x.r.list[0]).sort((a,b)=>a.r.list[0].t-b.r.list[0].t).slice(0,3);
+ if(!hs.length)return`I couldn’t find a free <b>${sv}</b> slot right now. Try another service or check back later.`;
+ return`Earliest <b>${sv}</b> slots:`+hs.map((x,i)=>`<div style="margin:8px 0">${i+1}. <b>${esc(x.h.name)}</b> — ${when(x.r.list[0].t)} (${dur(mins(x.r.list[0].t))}) · ${x.r.online} patients online${isOpen(x.h,Date.now())?'':' · opens '+hh(x.h.open)} <button class="btn g" data-h="${x.h.id}" style="padding:4px 10px">View slots</button></div>`).join('')}
+function hospAnswer(h){const sv=$('#svc').value;if(!h.svc[sv])return`<b>${esc(h.name)}</b> doesn’t offer ${sv}. It offers: ${Object.keys(h.svc).join(', ')}.`;const r=slots(h,sv,Date.now(),8),f=r.list[0],st=status(h,r);
+ return`<b>${esc(h.name)}</b> (${sv}): <b>${st[0]}</b>. ${r.online} patients online${f?`, next free slot <b>${when(f.t)}</b> (${dur(mins(f.t))}), ${f.ahead} ahead of you`:', no free slots soon'}. <button class="btn g" data-h="${h.id}" style="padding:4px 10px">View slots</button>`}
+const EMERMSG='🚨 <b>This may be an emergency.</b> Please call your local emergency number now (112 in India) or go to the nearest emergency room — don’t wait for a slot. If you are thinking of harming yourself, contact emergency services or a person you trust right away.';
+const MEDMSG='I can’t give medical advice or diagnose. For symptoms please see a doctor — I can help you find a free slot. Which service do you need?';
+const OOSMSG='🙅 That’s outside what I can help with. I only answer questions about CareSlot: free hospital slots, a specific hospital, waiting times, tests, bookings and our FAQs. Try one of the questions below.';
+function reply(q){const L=q.toLowerCase();
+ if(/^\s*(hi|hello|hey|namaste|good (morning|evening|afternoon))\b/.test(L))return'Hi! 👋 I can find a free hospital slot, check a specific hospital, or answer questions about waiting times, tests and bookings.';
+ if(EMER.test(L))return EMERMSG;
+ const sv=svcOf(q),h=hospOf(q);
+ if(h&&(AVAIL.test(L)||toks(q).length<=4)){if(sv)$('#svc').value=sv;return hospAnswer(h)}
+ if(sv&&AVAIL.test(L))return slotAnswer(sv);
+ if(/which hospital|free now|free slot|earliest|any slot|available now/.test(L))return slotAnswer($('#svc').value);
+ if(MEDQ.test(L))return MEDMSG;
+ const t=toks(q);let best=null,bs=0;FAQ.forEach(e=>{const kw=(e[2]+' '+toks(e[0]).join(' ')).split(' ');let sc=0;t.forEach(w=>{if(kw.includes(w))sc+=1;else if(w.length>=4&&kw.some(k=>k.length>=4&&(k.startsWith(w)||w.startsWith(k))))sc+=.6});if(sc>bs){bs=sc;best=e}});
+ if(best&&bs>=1)return`<b>${best[0]}</b><br>${best[1]}`;
+ return OOSMSG}
+const CH=[];const CHIPS=['Which hospital is free now?','Free slot for my child','How long do blood tests take?','What does patients online mean?','When is the best time to visit?','How do I cancel?'];
+function chatHtml(){return CH.map(m=>`<div class="msg ${m.u?'u':''}">${m.u?esc(m.t):m.t}</div>`).join('')}
+// ===== AI layer (optional; falls back to the rule-based assistant) =====
+const strip=h=>h.replace(/<[^>]+>/g,'').replace(/&amp;/g,'&');
+const AI_ON=()=>(typeof claude!=='undefined'&&!!claude.use)||!!AI_ENDPOINT;
+const tmo=(p,ms)=>Promise.race([p,new Promise((_,j)=>setTimeout(()=>j(new Error('timeout')),ms))]);
+function aiPrompt(q){return`You are the CareSlot Assistant, a patient-facing helper for a hospital slot-finder website.
+Use ONLY the knowledge below. Never invent numbers, hospitals, services, prices or medical facts.
+KNOWLEDGE BASE:
+${FAQ.map(e=>'Q: '+strip(e[0])+'\nA: '+strip(e[1])).join('\n')}
+HOSPITALS: ${CFG.hospitals.map(h=>h.id+' = '+h.name+' (offers '+Object.keys(h.svc).join(', ')+')').join('; ')}
+SERVICES: ${SERV.join(', ')}
+Currently selected service: ${$('#svc').value}
+Classify the question and reply with ONLY this JSON (no markdown):
+{"kind":"faq"|"slots"|"hospital"|"emergency"|"medical"|"out_of_scope","answer":"<=70 words, friendly, plain text, only from the knowledge base","service":<one of SERVICES or null>,"hospital_id":<hospital id or null>}
+kind rules: faq = answerable from the knowledge base (rewrite naturally); slots = wants a free slot or "which hospital is free" (set service if known); hospital = asks about one specific hospital (set hospital_id); emergency = urgent danger to life; medical = asks for diagnosis, medicine or treatment advice; out_of_scope = anything not about CareSlot, hospitals slots, waiting times, tests, bookings or its FAQs (general knowledge, other topics, chit-chat, coding, opinions). If the knowledge base cannot answer a CareSlot question, use out_of_scope.
+Question: ${JSON.stringify(q)}`}
+async function aiCall(p){
+ if(typeof claude!=='undefined'&&claude.use){const s=await claude.use('sample');if(s)return await s.json(p,{modelTier:'quick',cache:false})}
+ if(AI_ENDPOINT){const r=await fetch(AI_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt:p})});if(!r.ok)throw new Error('http '+r.status);const d=await r.json();if(typeof d.result!='string')return d.result;const a=d.result.indexOf('{'),b=d.result.lastIndexOf('}');return JSON.parse(d.result.slice(a,b+1))}
+ throw new Error('no ai')}
+function fromAI(j){if(!j||typeof j!='object')throw new Error('bad');const k=j.kind;
+ if(k=='emergency')return EMERMSG;if(k=='medical')return MEDMSG;if(k=='out_of_scope')return OOSMSG;
+ const sv=SERV.includes(j.service)?j.service:null,h=CFG.hospitals.find(x=>x.id==j.hospital_id);
+ if(k=='hospital'&&h){if(sv)$('#svc').value=sv;return hospAnswer(h)}
+ if(k=='slots')return slotAnswer(sv||$('#svc').value);
+ if(k=='faq'&&typeof j.answer=='string'&&j.answer.trim())return esc(j.answer.trim().slice(0,700)).replace(/\n/g,'<br>');
+ throw new Error('bad')}
+async function smart(q){const L=q.toLowerCase();
+ if(EMER.test(L)||/^\s*(hi|hello|hey|namaste)\b/.test(L))return{h:reply(q)};
+ if(!AI_ON())return{h:reply(q)};
+ try{return{h:fromAI(await tmo(aiCall(aiPrompt(q)),15000)),tag:'✨ AI answer'}}catch(e){return{h:reply(q),tag:'Quick answer (AI unavailable right now)'}}}
+function paint(){const l=$('#cl');l.innerHTML=chatHtml();l.scrollTop=l.scrollHeight}
+async function ask(q){q=q.trim();if(!q)return;CH.push({u:1,t:q});const m={t:'<span class="mut">Thinking…</span>'};CH.push(m);paint();const r=await smart(q);m.t=r.h+(r.tag?`<div class="tg">${r.tag}</div>`:'');paint();render()}
+const faqList=q=>{const t=toks(q||'');return FAQ.filter(e=>!t.length||t.some(w=>(e[0]+' '+e[2]+' '+e[1]).toLowerCase().includes(w))).map(e=>`<details><summary>${e[0]}</summary><p>${e[1]}</p></details>`).join('')||'<p class="mut">No matching question. Try the chat above.</p>'};
+CH.push({t:'Hi! 👋 I’m the CareSlot assistant. Ask me for a free slot (e.g. <i>“free slot for my child today”</i>), about a hospital (e.g. <i>“Lakeside next slot”</i>), or tap a question below.'});
+$('#view3').innerHTML=`<div class="card"><h3>Ask CareSlot</h3><div class="mut" id="mode"></div><div id="cl" class="chat">${chatHtml()}</div><div class="chips">${CHIPS.map(c=>`<button class="btn g" data-q="${c}">${c}</button>`).join('')}</div><form id="cf" class="ctl" style="margin:10px 0 0"><input id="ci" placeholder="Type your question…" autocomplete="off" style="flex:1;min-width:0"><button class="btn">Ask</button></form></div><div class="card"><h3>Frequently asked questions</h3><input id="fs" placeholder="Search FAQs…" style="width:100%;margin-bottom:8px"><div id="faql">${faqList('')}</div></div>`;
+$('#mode').textContent=AI_ON()?'✨ AI-powered answers, grounded in our FAQ and live slot data':'Quick-answer mode (AI not connected)';
+$('#cf').onsubmit=e=>{e.preventDefault();const v=$('#ci').value;$('#ci').value='';ask(v)};
+$('#fs').oninput=e=>{$('#faql').innerHTML=faqList(e.target.value)};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(b)ask(b.dataset.q)});
+$('#t3').onclick=()=>{S.tab=3;S.pend=null;render()};
+render();setInterval(()=>{if(!S.pend)render()},30000);
+</script></body></html>
